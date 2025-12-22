@@ -150,7 +150,7 @@
     try {
         client.pushMessage(userId, {
         type: 'text',
-        text: `ขอบคุณที่สั่งซื้อ! รายการของคุณคือ: ${orderDetails}`
+        text: `ลงเวลาสำเร็จ`
     });
         // 2. ส่งข้อมูลไปที่ ngrok URL (เปลี่ยน xxxx เป็นของจริงของคุณ)
         const response = await fetch('https://ff11d86ff146.ngrok-free.app/webhook-test/0a09949c-2aa9-4d45-8623-f9c163c6de1a', {
@@ -190,6 +190,5 @@
 </body>
 
 </html>
-
 
 
