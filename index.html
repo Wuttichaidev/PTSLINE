@@ -60,23 +60,6 @@
     if (!liff.isLoggedIn()) { 
         liff.login(); 
     } else { 
-        // --- ส่วนที่เพิ่มเข้ามา ---
-        try {
-            // เช็กก่อนว่าเปิด LIFF จากในแชทหรือไม่ (ถ้าเปิดจากเบราว์เซอร์ปกติจะส่งไม่ได้)
-            if (liff.isInClient()) {
-                await liff.sendMessages([
-                    {
-                        type: 'text',
-                        text: 'ลงเวลาทำงาน' // แก้ไขข้อความที่ต้องการให้ User ส่ง
-                    }
-                ]);
-                console.log('Message sent successfully');
-            }
-        } catch (error) {
-            console.error('Error sending message:', error);
-            // กรณี Error ส่วนใหญ่เกิดจากยังไม่ได้ตั้งสิทธิ์ chat_message.write ใน Console
-        }
-        // -----------------------
 
         stepText.innerText = STEPS[0].msg;
         startCamera(); 
@@ -148,11 +131,7 @@
     };
 
     try {
-         liff.sendMessages([
-                    {
-                        type: 'text',
-                        text: 'ลงเวลาทำงาน' // แก้ไขข้อความที่ต้องการให้ User ส่ง
-                    }]);
+    
         // 2. ส่งข้อมูลไปที่ ngrok URL (เปลี่ยน xxxx เป็นของจริงของคุณ)
         const response = await fetch('https://ff11d86ff146.ngrok-free.app/webhook-test/0a09949c-2aa9-4d45-8623-f9c163c6de1a', {
             method: 'POST',
