@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIFF Face Challenge</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+    
+    <style>
+        body { margin: 0; background: #000; color: white; font-family: sans-serif; overflow: hidden; }
+        .container { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        video#webcam { position: absolute; width: 100%; height: auto; transform: scaleX(-1); }
+        canvas#output_canvas { position: absolute; width: 100%; height: auto; transform: scaleX(-1); }
+        
+        #instruction-box { 
+            position: absolute; top: 15%; width: 80%; 
+            background: rgba(0,0,0,0.8); padding: 20px; 
+            border-radius: 15px; text-align: center; border: 2px solid #00b900;
+            z-index: 30;
+        }
+        #step-text { font-size: 1.5rem; font-weight: bold; color: #fff; }
+        #logout-btn { position: absolute; top: 20px; right: 20px; background: #ff4b4b; color: white; border: none; padding: 8px 15px; border-radius: 5px; z-index: 40; }
+    </style>
+</head>
+<body>
+
+    <button id="logout-btn" onclick="liff.logout(); window.location.reload();">Logout</button>
+
+    <div class="container">
+        <video id="webcam" autoplay playsinline></video>
+        <canvas id="output_canvas"></canvas>
+        
+        <div id="instruction-box">
+            <div id="step-text">กำลังโหลด...</div>
+        </div>
+    </div>
+
+    <script>
+        const videoElement = document.getElementById('webcam');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const stepText = document.getElementById('step-text');
+
+        // สถานะของ Challenge: 0=มองตรง, 1=หันซ้าย, 2=หันขวา, 3=เสร็จสิ้น
+        let currentStep = 0;
+        let isProcessing = false;
+
+        const STEPS = [
+            { msg: "STEP 1: มองตรง", color: "#00b900" },
+            { msg: "STEP 2: หันหน้าไปทาง ''ขวา' ➡️", color: "#ffcc00" },
+            { msg: "STEP 3: หันหน้าไปทาง ซ้าย' ⬅️", color: "#ffcc00" },
+            { msg: "สำเร็จ! กำลังบันทึกเวลา...", color: "#00ff00" }
+        ];
+
+        async function initLIFF() {
+            await liff.init({ liffId: "2008745485-1xvYlrHE" });
+            if (!liff.isLoggedIn()) { liff.login(); }
+            else { 
+                stepText.innerText = STEPS[0].msg;
+                startCamera(); 
+            }
+        }
+
+        function onResults(results) {
+            canvasElement.width = videoElement.videoWidth;
+            canvasElement.height = videoElement.videoHeight;
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0 && !isProcessing) {
+                const landmarks = results.multiFaceLandmarks[0];
+                //drawConnectors(canvasCtx, landmarks, FACEMESH_TESSELATION, {color: '#C0C0C070', lineWidth: 1});
+
+                const nose = landmarks[1].x;
+                const left = landmarks[234].x;
+                const right = landmarks[454].x;
+                const ratio = (nose - left) / (right - left);
+
+                // Logic ตรวจสอบแต่ละ Step
+                if (currentStep === 0 && ratio > 0.4 && ratio < 0.6) {
+                    nextStep(); // ผ่านมองตรง
+                } else if (currentStep === 1 && ratio < 0.3) {
+                    nextStep(); // ผ่านหันซ้าย
+                } else if (currentStep === 2 && ratio > 0.7) {
+                    nextStep(); // ผ่านหันขวา
+                }
+            }
+            canvasCtx.restore();
+        }
+
+        function nextStep() {
+            currentStep++;
+            if (currentStep < 3) {
+                stepText.innerText = STEPS[currentStep].msg;
+                // ใส่เสียง Beep หรือสั่นมือถือตรงนี้ได้
+            } else if (currentStep === 3 && !isProcessing) {
+                isProcessing = true;
+                stepText.innerText = STEPS[3].msg;
+                handleCheckin();
+            }
+        }
+
+        async function handleCheckin() {
+            const profile = await liff.getProfile();
+            stepText.innerText = "📍 กำลังดึงตำแหน่งพิกัด...";
+
+        // 1. ดึงตำแหน่งพิกัด GPS
+       const pos = await new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, (err) => {
+        // ถ้าดึงพิกัดไม่ได้จริงๆ ให้ใช้พิกัด 0,0 หรือแจ้งเตือน
+        console.warn("Geolocation error:", err.message);
+        resolve({ coords: { latitude: 0, longitude: 0 } }); 
+    }, {
+        enableHighAccuracy: false, // ปรับเป็น false จะดึงพิกัดจาก Cell Site/WiFi ได้เร็วขึ้น (แทนที่ GPS ตรงๆ)
+        timeout: 10000,           // เพิ่มเวลาเป็น 10 วินาที
+        maximumAge: 30000         // อนุญาตให้ใช้พิกัดเก่าที่เคยดึงไว้ไม่เกิน 30 วินาที
+    });
+});
+    // 1. เตรียมข้อมูลที่จะส่ง
+    const payload = {
+        userId: profile.userId,
+        displayName: profile.displayName,
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        timestamp: new Date().toISOString()
+    };
+
+    try {
+        // 2. ส่งข้อมูลไปที่ ngrok URL (เปลี่ยน xxxx เป็นของจริงของคุณ)
+        const response = await fetch('http://localhost:5678/webhook-test/0a09949c-2aa9-4d45-8623-f9c163c6de1a', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            console.log("Data sent to n8n successfully!");
+            liff.closeWindow(); // ปิดหน้าต่าง LIFF เมื่อส่งเสร็จ
+        } else {
+            console.error("Failed to send data:", response.statusText);
+        }
+    } catch (error) {
+        console.error("Error calling webhook:", error);
+    }
+
+        }
+
+        const faceMesh = new FaceMesh({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`});
+        faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: true, minDetectionConfidence: 0.5 });
+        faceMesh.onResults(onResults);
+
+        function startCamera() {
+            const camera = new Camera(videoElement, {
+                onFrame: async () => { await faceMesh.send({image: videoElement}); },
+                width: 640, height: 480
+            });
+            camera.start();
+        }
+
+        initLIFF();
+    </script>
+</body>
+</html>
