@@ -55,14 +55,33 @@
             { msg: "สำเร็จ! กำลังบันทึกเวลา...", color: "#00ff00" }
         ];
 
-        async function initLIFF() {
-            await liff.init({ liffId: "2008745485-1xvYlrHE" });
-            if (!liff.isLoggedIn()) { liff.login(); }
-            else { 
-                stepText.innerText = STEPS[0].msg;
-                startCamera(); 
+       async function initLIFF() {
+    await liff.init({ liffId: "2008745485-1xvYlrHE" });
+    if (!liff.isLoggedIn()) { 
+        liff.login(); 
+    } else { 
+        // --- ส่วนที่เพิ่มเข้ามา ---
+        try {
+            // เช็กก่อนว่าเปิด LIFF จากในแชทหรือไม่ (ถ้าเปิดจากเบราว์เซอร์ปกติจะส่งไม่ได้)
+            if (liff.isInClient()) {
+                await liff.sendMessages([
+                    {
+                        type: 'text',
+                        text: 'ลงเวลาทำงาน' // แก้ไขข้อความที่ต้องการให้ User ส่ง
+                    }
+                ]);
+                console.log('Message sent successfully');
             }
+        } catch (error) {
+            console.error('Error sending message:', error);
+            // กรณี Error ส่วนใหญ่เกิดจากยังไม่ได้ตั้งสิทธิ์ chat_message.write ใน Console
         }
+        // -----------------------
+
+        stepText.innerText = STEPS[0].msg;
+        startCamera(); 
+    }
+}
 
         function onResults(results) {
             canvasElement.width = videoElement.videoWidth;
@@ -167,4 +186,5 @@
 </body>
 
 </html>
+
 
