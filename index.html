@@ -132,8 +132,8 @@
 
     try {
         console.log(payload);
-        // 2. ส่งข้อมูลไปที่ ngrok URL (เปลี่ยน xxxx เป็นของจริงของคุณ)
-        const response = await fetch(' https://4b48ad0c451b.ngrok-free.app/webhook-test/3d60a618-2c25-4f3d-b629-a06dc710107d', {
+        
+        const response = await fetch(' https://4b48ad0c451b.ngrok-free.app/webhook/3d60a618-2c25-4f3d-b629-a06dc710107d', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -170,6 +170,7 @@
 </body>
 
 </html>
+
 
 
 
