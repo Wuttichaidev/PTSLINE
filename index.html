@@ -131,22 +131,22 @@
     };
 
     try {
-    
+        console.log(payload);
         // 2. ส่งข้อมูลไปที่ ngrok URL (เปลี่ยน xxxx เป็นของจริงของคุณ)
-        const response = await fetch('https://ff11d86ff146.ngrok-free.app/webhook-test/0a09949c-2aa9-4d45-8623-f9c163c6de1a', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
+        // const response = await fetch('https://ff11d86ff146.ngrok-free.app/webhook-test/0a09949c-2aa9-4d45-8623-f9c163c6de1a', {
+        //     method: 'POST',
+        //     headers: {
+        //         'Content-Type': 'application/json'
+        //     },
+        //     body: JSON.stringify(payload)
+        // });
 
-        if (response.ok) {
-            console.log("Data sent to n8n successfully!");
-            liff.closeWindow(); // ปิดหน้าต่าง LIFF เมื่อส่งเสร็จ
-        } else {
-            console.error("Failed to send data:", response.statusText);
-        }
+        // if (response.ok) {
+        //     console.log("Data sent to n8n successfully!");
+        //     liff.closeWindow(); // ปิดหน้าต่าง LIFF เมื่อส่งเสร็จ
+        // } else {
+        //     console.error("Failed to send data:", response.statusText);
+        // }
     } catch (error) {
         console.error("Error calling webhook:", error);
     }
@@ -170,5 +170,6 @@
 </body>
 
 </html>
+
 
 
